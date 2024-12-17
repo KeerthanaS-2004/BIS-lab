@@ -1,0 +1,41 @@
+import numpy as np
+class Particle:
+    def __init__(self, dimensions, minx, maxx):
+        self.position = np.random.uniform(minx, maxx, dimensions)
+        self.velocity = np.random.uniform(-1, 1, dimensions)
+        self.bestPos = np.copy(self.position)
+        self.bestFitness = float('inf')
+def fitness_function(x):
+    return np.sum(x**2)
+def particle_swarm_optimization(dimensions, minx, maxx, N, max_iter, w, c1, c2):
+    swarm = [Particle(dimensions, minx, maxx) for _ in range(N)]
+    best_fitness_swarm = float('inf')
+    best_pos_swarm = np.zeros(dimensions)
+    for iteration in range(max_iter):
+        for i in range(N):
+            swarm[i].fitness = fitness_function(swarm[i].position)
+            if swarm[i].fitness < swarm[i].bestFitness:
+                swarm[i].bestFitness = swarm[i].fitness
+                swarm[i].bestPos = np.copy(swarm[i].position)
+            if swarm[i].fitness < best_fitness_swarm:
+                best_fitness_swarm = swarm[i].fitness
+                best_pos_swarm = np.copy(swarm[i].position)
+        for i in range(N):
+            r1, r2 = np.random.rand(), np.random.rand()
+            swarm[i].velocity = (w * swarm[i].velocity +
+                                 r1 * c1 * (swarm[i].bestPos - swarm[i].position) +
+                                 r2 * c2 * (best_pos_swarm - swarm[i].position))
+            swarm[i].position += swarm[i].velocity
+            swarm[i].position = np.clip(swarm[i].position, minx, maxx)
+    return best_pos_swarm, best_fitness_swarm
+dimensions = 2
+minx = -10
+maxx = 10
+N = 30
+max_iter = 100
+w = 0.5
+c1 = 1.5
+c2 = 1.5
+best_position, best_fitness = particle_swarm_optimization(dimensions, minx, maxx, N, max_iter, w, c1, c2)
+print("Best Position:", best_position)
+print("Best Fitness:", best_fitness)
