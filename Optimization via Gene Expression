@@ -1,0 +1,61 @@
+import random
+import numpy as np
+
+def fitness_function(individual):
+    return sum(x**2 for x in individual)
+
+def mutate(individual, mutation_rate, bounds):
+    for i in range(len(individual)):
+        if random.random() < mutation_rate:
+            individual[i] = random.uniform(bounds[0], bounds[1])
+    return individual
+
+def crossover(parent1, parent2):
+    child = [random.choice(genes) for genes in zip(parent1, parent2)]
+    return child
+
+def select_parents(population, fitness_values):
+    total_fitness = sum(fitness_values)
+    probabilities = [f / total_fitness for f in fitness_values]
+    parent1 = population[np.random.choice(len(population), p=probabilities)]
+    parent2 = population[np.random.choice(len(population), p=probabilities)]
+    return parent1, parent2
+
+def gene_expression_algorithm(
+    pop_size=100, 
+    num_generations=100, 
+    mutation_rate=0.1, 
+    bounds=(-10, 10), 
+    dimensions=2
+):
+  
+    population = [
+        [random.uniform(bounds[0], bounds[1]) for _ in range(dimensions)]
+        for _ in range(pop_size)
+    ]
+
+    for generation in range(num_generations):
+        fitness_values = [fitness_function(ind) for ind in population]
+        best_index = np.argmin(fitness_values)
+        print(f"Generation {generation}: Best Fitness = {fitness_values[best_index]}, Best Individual = {population[best_index]}")
+        next_population = []
+        for _ in range(pop_size):
+            parent1, parent2 = select_parents(population, fitness_values)
+            child = crossover(parent1, parent2)
+            child = mutate(child, mutation_rate, bounds)
+            next_population.append(child)
+        population = next_population
+    final_fitness_values = [fitness_function(ind) for ind in population]
+    best_index = np.argmin(final_fitness_values)
+    return population[best_index], final_fitness_values[best_index]
+
+if __name__ == "__main__":
+    best_solution, best_fitness = gene_expression_algorithm(
+        pop_size=50, 
+        num_generations=50, 
+        mutation_rate=0.2, 
+        bounds=(-5, 5), 
+        dimensions=3
+    )
+    print(f"\nBest Solution: {best_solution}, Best Fitness: {best_fitness}")
+
