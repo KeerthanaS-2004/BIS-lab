@@ -1,0 +1,51 @@
+import random
+
+def fitness(x):
+    return x ** 2  
+
+def generate_population(pop_size, min_val, max_val):
+    return [random.randint(min_val, max_val) for _ in range(pop_size)]
+
+def tournament_selection(population, fitness_func, tournament_size):
+    selected = random.sample(population, tournament_size)
+    selected.sort(key=fitness_func, reverse=True)
+    return selected[0]
+
+def crossover(parent1, parent2):
+    point = random.randint(1, len(bin(max(parent1, parent2))) - 2)
+    mask = (1 << point) - 1
+    child1 = (parent1 & mask) | (parent2 & ~mask)
+    child2 = (parent2 & mask) | (parent1 & ~mask)
+    return child1, child2
+
+def mutation(child, min_val, max_val):
+    bit_len = len(bin(max_val)) - 2  
+    point = random.randint(0, bit_len - 1)
+    child ^= (1 << point)  
+    return child
+def genetic_algorithm(pop_size, min_val, max_val, generations, tournament_size, mutation_rate):
+    population = generate_population(pop_size, min_val, max_val)
+    for generation in range(generations):
+        population.sort(key=fitness, reverse=True)
+        best = population[0]
+        print(f"Generation {generation}: Best Solution = {best}, Fitness = {fitness(best)}")
+        new_population = population[:2]  # Keep the top 2 solutions
+        while len(new_population) < pop_size:
+            parent1 = tournament_selection(population, fitness, tournament_size)
+            parent2 = tournament_selection(population, fitness, tournament_size)
+            child1, child2 = crossover(parent1, parent2)
+            if random.random() < mutation_rate:
+                child1 = mutation(child1, min_val, max_val)
+            if random.random() < mutation_rate:
+                child2 = mutation(child2, min_val, max_val)
+            new_population.extend([child1, child2])
+        population = new_population[:pop_size]
+    return population[0]
+pop_size = 20  # Population size
+min_val = -10  # Minimum value of x
+max_val = 10   # Maximum value of x
+generations = 100  # Number of generations
+tournament_size = 5  # Size of tournament for selection
+mutation_rate = 0.1  # Mutation 
+ratebest_solution = genetic_algorithm(pop_size, min_val, max_val, generations, tournament_size, mutation_rate)
+print(f"Best Solution Found: {best_solution}, Fitness = {fitness(best_solution)}")
