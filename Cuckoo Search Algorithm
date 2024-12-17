@@ -1,0 +1,52 @@
+import numpy as np
+
+def objective_function(x):
+    return x**2 + 2*x + 1
+
+# Levy Flight: Generates random steps for exploration
+def levy_flight(beta=1.5, size=1):
+    sigma_u = (np.math.gamma(1 + beta) * np.sin(np.pi * beta / 2) / (np.math.gamma((1 + beta) / 2) * beta * 2 ** ((beta - 1) / 2))) ** (1 / beta)
+    u = np.random.normal(0, sigma_u, size)
+    v = np.random.normal(0, 1, size)
+    return u / np.abs(v) ** (1 / beta)
+
+def cuckoo_search(obj_func, n_nests, max_iter, alpha=0.01, p_a=0.25):
+    # Step 1: Initialize nests (solutions)
+    nests = np.random.uniform(-10, 10, n_nests)  # Initialize random solutions in the range [-10, 10]
+    fitness = np.array([obj_func(nest) for nest in nests])
+    
+    # Best solution found so far
+    best_nest = nests[np.argmin(fitness)]
+    best_fitness = np.min(fitness)
+    for iter in range(max_iter):
+        # Generate new solutions (nests) using Levy flights
+        new_nests = nests + alpha * levy_flight(size=n_nests)
+        
+        # Evaluate new solutions
+        new_fitness = np.array([obj_func(nest) for nest in new_nests])
+        
+        # If the new solution is better, replace it
+        better_nests_idx = new_fitness < fitness
+        nests[better_nests_idx] = new_nests[better_nests_idx]
+        fitness[better_nests_idx] = new_fitness[better_nests_idx]
+        
+        # Find the current best nest
+        current_best_nest = nests[np.argmin(fitness)]
+        current_best_fitness = np.min(fitness)
+        
+        # Update global best nest
+        if current_best_fitness < best_fitness:
+            best_nest = current_best_nest
+            best_fitness = current_best_fitness
+        abandon_idx = np.random.rand(n_nests) < p_a
+        nests[abandon_idx] = np.random.uniform(-10, 10, np.sum(abandon_idx))
+        print(f"Iteration {iter+1}/{max_iter}, Best Fitness: {best_fitness}")
+    return best_nest, best_fitness
+n_nests = 20          # Number of nests (candidate solutions)
+max_iter = 100        # Maximum number of iterations
+alpha = 0.01          # Step size for Levy flights
+p_a = 0.25            # Probability of abandonment (nest replacement)
+best_solution, best_objective = cuckoo_search(objective_function, n_nests, max_iter, alpha, p_a)
+print(f"Best Solution: {best_solution}")
+print(f"Best Objective Value: {best_objective}")
+
