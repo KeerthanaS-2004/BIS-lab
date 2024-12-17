@@ -1,0 +1,49 @@
+import multiprocessing
+import random
+import time
+def apply_rule(left, center, right):
+    rule = {
+        (1, 1, 1): 0,
+        (1, 1, 0): 1,
+        (1, 0, 1): 1,
+        (1, 0, 0): 0,
+        (0, 1, 1): 1,
+        (0, 1, 0): 1,
+        (0, 0, 1): 1,
+        (0, 0, 0): 0,
+    }
+    return rule[(left, center, right)]
+
+def update_segment(start, end, current_gen, next_gen):
+    for i in range(start, end):
+        left = current_gen[i - 1] if i > 0 else current_gen[-1]
+        center = current_gen[i]
+        right = current_gen[i + 1] if i < len(current_gen) - 1 else current_gen[0]
+        next_gen[i] = apply_rule(left, center, right)
+
+def parallel_cellular_automaton(size, steps, num_processes):
+    current_gen = [random.randint(0, 1) for _ in range(size)]
+    next_gen = multiprocessing.Array('i', size)
+    chunk_size = size // num_processes
+    processes = []
+    print("Initial Generation:", ''.join(map(str, current_gen)))
+    for step in range(steps):
+        processes = []
+        for p in range(num_processes):
+            start = p * chunk_size
+            end = start + chunk_size if p < num_processes - 1 else size
+            process = multiprocessing.Process(target=update_segment, args=(start, end, current_gen, next_gen))
+            processes.append(process)
+            process.start()
+        for process in processes:
+            process.join()
+        current_gen = list(next_gen)
+        print(f"Generation {step + 1}:", ''.join(map(str, current_gen)))
+if __name__ == "__main__":
+    size = 40            # Number of cells
+    steps = 20           # Number of generations
+    num_processes = 4    # Number of parallel processes
+    start_time = time.time()
+    parallel_cellular_automaton(size, steps, num_processes)
+    print("Execution Time:", time.time() - start_time, "seconds")
+
