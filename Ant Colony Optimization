@@ -1,0 +1,103 @@
+import numpy as np
+import random
+class AntColonyOptimization:
+    def __init__(self, num_ants, num_iterations, alpha, beta, rho, q0, distance_matrix):
+        self.num_ants = num_ants
+        self.num_iterations = num_iterations
+        self.alpha = alpha
+        self.beta = beta  
+        self.rho = rho 
+        self.q0 = q0  
+        self.distance_matrix = distance_matrix 
+        self.num_cities = len(distance_matrix)
+        self.pheromone = np.ones((self.num_cities, self.num_cities))
+        self.visibility = 1.0 / (self.distance_matrix + np.eye(self.num_cities))
+        
+    def generate_ant_solution(self):
+        visited = [False] * self.num_cities
+        path = []
+        start_city = random.randint(0, self.num_cities - 1)
+        path.append(start_city)
+        visited[start_city] = True
+        
+        for _ in range(self.num_cities - 1):
+            current_city = path[-1]
+            probabilities = []
+            for next_city in range(self.num_cities):
+                if not visited[next_city]:
+                    tau = self.pheromone[current_city][next_city] ** self.alpha
+                    eta = self.visibility[current_city][next_city] ** self.beta
+                    probabilities.append(tau * eta)
+                else:
+                    probabilities.append(0)
+            total = sum(probabilities)
+            probabilities = [p / total for p in probabilities]
+            if random.random() < self.q0:
+                next_city = probabilities.index(max(probabilities)) 
+            else:
+                next_city = self.stochastic_choice(probabilities) 
+            path.append(next_city)
+            visited[next_city] = True
+        
+        return path
+    
+    def stochastic_choice(self, probabilities):
+        cumulative_sum = np.cumsum(probabilities)
+        rand = random.random()
+        for i, p in enumerate(cumulative_sum):
+            if rand <= p:
+                return i
+        return len(probabilities) - 1
+    
+    def calculate_tour_length(self, tour):
+        length = 0
+        for i in range(len(tour) - 1):
+            length += self.distance_matrix[tour[i]][tour[i + 1]]
+        length += self.distance_matrix[tour[-1]][tour[0]]  
+        return length
+    
+    def update_pheromone(self, ants_solutions):
+        self.pheromone *= (1 - self.rho)
+        for tour, tour_length in ants_solutions:
+            pheromone_deposit = 1.0 / tour_length 
+            for i in range(len(tour) - 1):
+                self.pheromone[tour[i]][tour[i + 1]] += pheromone_deposit
+            self.pheromone[tour[-1]][tour[0]] += pheromone_deposit 
+        
+    def run(self):
+        best_tour = None
+        best_length = float('inf')
+        for iteration in range(self.num_iterations):
+            ants_solutions = []
+            for _ in range(self.num_ants):
+                tour = self.generate_ant_solution()
+                tour_length = self.calculate_tour_length(tour)
+                ants_solutions.append((tour, tour_length))
+                if tour_length < best_length:
+                    best_length = tour_length
+                    best_tour = tour
+            self.update_pheromone(ants_solutions)
+            print(f"Iteration {iteration + 1}/{self.num_iterations}: Best Tour Length = {best_length}")
+        return best_tour, best_length
+if __name__ == "__main__":
+    distance_matrix = np.array([
+        [0, 2, 2, 5, 7],
+        [2, 0, 4, 8, 3],
+        [2, 4, 0, 3, 6],
+        [5, 8, 3, 0, 1],
+        [7, 3, 6, 1, 0]
+    ])
+  
+    aco = AntColonyOptimization(
+        num_ants=10,  
+        num_iterations=100, 
+        alpha=1, 
+        beta=2,  
+        rho=0.5,  
+        q0=0.9,  
+        distance_matrix=distance_matrix
+    )
+    best_tour, best_length = aco.run()
+    print("\nBest Tour Found:", best_tour)
+    print("Best Tour Length:", best_length)
+
